@@ -1,0 +1,62 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/__pycache__
+
+# production
+/build
+
+# Python
+.ipynb_checkpoints
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
+
+# Eclipse PyDev
+.project
+.pydevproject
+
+# PyCharm
+.idea
+
+# ViM
+.*.swp
+
+# Emacs
+\#*#
+
+# OS files
+.DS_Store
+desktop.ini
+
+# Archives
+*.tar
+*.tar.gz
+*.tar.bz2
+*.zip
+*.whl
+
+#jupyter-notebooks
+.ipynb
+*.ipynb

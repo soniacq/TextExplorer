@@ -1,0 +1,6 @@
+.accordion .card .card-header {
+    padding:0;
+    background-color: whitesmoke;
+    border: '1px solid rgba(0, 0, 0, .125)';
+    box-shadow: 'none';
+}

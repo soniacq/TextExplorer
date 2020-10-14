@@ -1,0 +1,2 @@
+include VisualTextAnalyzer/build/textExplorer.js
+include VisualTextAnalyzer/data/lifeexpectancydata.csv

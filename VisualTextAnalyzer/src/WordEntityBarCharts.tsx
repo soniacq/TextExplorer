@@ -92,7 +92,7 @@ class WordEntityBarCharts extends React.PureComponent<
         },
         {
           calculate:
-            "datum.category == 'freq_abs_neg' ? 'Negative' : 'Positive'",
+            "datum.category == 'negative' ? 'Negative' : 'Positive'",
           as: 'CategoryGroup',
         },
       ],
@@ -263,7 +263,7 @@ class WordEntityBarCharts extends React.PureComponent<
         {calculate: 'datum.frequency', as: 'Value'},
         {
           calculate:
-            "datum.category == 'freq_abs_neg' ? 'Negative' : 'Positive'",
+            "datum.category == 'negative' ? 'Negative' : 'Positive'",
           as: 'CategoryGroup',
         },
       ],
@@ -317,13 +317,13 @@ class WordEntityBarCharts extends React.PureComponent<
     switch (value) {
       case SortedByOptions.BYPOSITIVE:
         sortedBy =
-          "datum.category == 'freq_abs_pos' ? datum." +
+          "datum.category == 'positive' ? datum." +
           this.state.selectedColumnName +
           ' : 0';
         break;
       case SortedByOptions.BYNEGATIVE:
         sortedBy =
-          "datum.category == 'freq_abs_neg' ? datum." +
+          "datum.category == 'negative' ? datum." +
           this.state.selectedColumnName +
           ' : 0';
         break;
@@ -509,7 +509,7 @@ class WordEntityBarCharts extends React.PureComponent<
                 {'Sample text for '}
                 <u>
                   {JSON.parse(this.state.info).word &&
-                    JSON.parse(this.state.info).sample &&
+                    JSON.parse(this.state.info).samples &&
                     JSON.parse(this.state.info).word}
                 </u>
               </h4>
@@ -524,9 +524,9 @@ class WordEntityBarCharts extends React.PureComponent<
                 className="card-body"
                 style={{height: 150, overflowY: 'auto'}}
               >
-                {JSON.parse(this.state.info).sample && (
+                {JSON.parse(this.state.info).samples && (
                   <ReactMarkdown
-                    source={JSON.parse(this.state.info).sample[0].replace(
+                    source={JSON.parse(this.state.info).samples[0].replace(
                       new RegExp(JSON.parse(this.state.info).word, 'gi'),
                       (match: string) => `<mark>${match}</mark>`
                     )}

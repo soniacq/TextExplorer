@@ -55,25 +55,25 @@ def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
     word_cont = 0
 
     for el in word_data:
-        if (word_cont < 15):
+        if (word_cont < 10):
             row_pos = {
                 "word": el["word"],
-                "category":"freq_abs_pos",
+                "category":"positive",
                 "normalized_frequency":el["freq_nor_pos"],
                 "frequency":el["freq_abs_pos"],
                 "normalized_frequency_diff_pos_neg": abs(el["freq_nor_pos"]-el["freq_nor_neg"]),
                 "frequency_diff_pos_neg": abs(el["freq_abs_pos"]-el["freq_abs_neg"]),
-                "sample": el["samples_pos"]
+                "samples": el["samples_pos"]
             }
             word_data_JSON.append(row_pos)
             row_neg = {
                 "word": el["word"],
-                "category":"freq_abs_neg",
+                "category":"negative",
                 "normalized_frequency":el["freq_nor_neg"],
                 "frequency":el["freq_abs_neg"],
                 "normalized_frequency_diff_pos_neg": abs(el["freq_nor_pos"]-el["freq_nor_neg"]),
                 "frequency_diff_pos_neg": abs(el["freq_abs_pos"]-el["freq_abs_neg"]),
-                "sample": el["samples_neg"]
+                "samples": el["samples_neg"]
             }
             word_data_JSON.append(row_neg)
             word_cont += 1
@@ -86,23 +86,23 @@ def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
                     row_pos = {
                         "entity_type": key,
                         "word": el["word"],
-                        "category":"freq_abs_pos",
+                        "category":"positive",
                         "normalized_frequency":el["freq_nor_pos"],
                         "frequency":el["freq_abs_pos"],
                         "normalized_frequency_diff_pos_neg": abs(el["freq_nor_pos"]-el["freq_nor_neg"]),
                         "frequency_diff_pos_neg": abs(el["freq_abs_pos"]-el["freq_abs_neg"]),
-                        "sample": el["samples_pos"]
+                        "samples": el["samples_pos"]
                     }
                     entity_data_JSON.append(row_pos)
                     row_neg = {
                         "entity_type": key,
                         "word": el["word"],
-                        "category":"freq_abs_neg",
+                        "category":"negative",
                         "normalized_frequency":el["freq_nor_neg"],
                         "frequency":el["freq_abs_neg"],
                         "normalized_frequency_diff_pos_neg": abs(el["freq_nor_pos"]-el["freq_nor_neg"]),
                         "frequency_diff_pos_neg": abs(el["freq_abs_pos"]-el["freq_abs_neg"]),
-                        "sample": el["samples_neg"]
+                        "samples": el["samples_neg"]
                     }
                     entity_data_JSON.append(row_neg)
                     entity_cont += 1

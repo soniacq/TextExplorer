@@ -45,6 +45,80 @@ def getSample(text):
             result.append(row)
     return result
 
+
+def get_words_frequency(texts, label):
+    print('Analyzing %d documents (%s category)' % (len(texts), label))
+    stopwords = nltk.corpus.stopwords.words('english')
+    all_words = {}
+    total_words = 0
+    for idx, text in enumerate(texts):
+        words = nltk.word_tokenize(text)
+        filtered_words = [word for word in words if word.lower() not in stopwords and len(word)>1]
+        for filtered_word in filtered_words:
+            if filtered_word not in all_words:
+                all_words[filtered_word] = {'word': filtered_word, 'category': label, 'frequency': 0, 'normalized_frequency': 0, 'samples': []}
+
+            all_words[filtered_word]['frequency'] += 1
+            if idx not in all_words[filtered_word]['samples']:
+                all_words[filtered_word]['samples'].append(idx)
+            total_words += 1
+
+    sorted_frequencies = []
+    for word_data in sorted(all_words.values(), key= lambda x:x['frequency'], reverse=True):
+        word_data['normalized_frequency'] = round(word_data['frequency']/total_words, 5)
+        sorted_frequencies.append(word_data)
+
+    return sorted_frequencies
+
+
+def join_frequencies(positive_words, negative_words, labels):
+    positive_frequencies = {w['word']: w for w in positive_words}
+    negative_frequencies = {w['word']: w for w in negative_words}
+
+    all_words = []
+    for word in set(list(positive_frequencies.keys()) + list(negative_frequencies.keys())):
+        pos = {}
+        neg = {}
+        if word in positive_frequencies:
+            pos = positive_frequencies[word]
+        else:
+            pos = {'word': word, 'category': labels['pos'], 'frequency': 0, 'normalized_frequency': 0, 'samples': []}
+        if word in negative_frequencies:
+            neg = negative_frequencies[word]
+        else:
+            neg = {'word': word, 'category': labels['neg'], 'frequency': 0, 'normalized_frequency': 0, 'samples': []}
+
+        frequency_difference = abs(pos["frequency"]-neg["frequency"])
+        normalized_frequency_difference = abs(pos["normalized_frequency"]-neg["normalized_frequency"])
+        pos['frequency_diff_pos_neg'] = frequency_difference
+        neg['frequency_diff_pos_neg'] = frequency_difference
+        pos['normalized_frequency_diff_pos_neg'] = normalized_frequency_difference
+        neg['normalized_frequency_diff_pos_neg'] = normalized_frequency_difference
+        all_words.append(pos)
+        all_words.append(neg)
+    return all_words
+
+
+def get_top_words (data, top_words):
+    positive_class = data[data['articleofinterest']==1]
+    negative_class = data[data['articleofinterest']==0]
+
+    positive_texts = [str(x) for x in positive_class['article'].tolist()] # list of texts
+    negative_texts = [str(x) for x in negative_class['article'].tolist()] # list of texts
+
+    labels = {'pos': 'positive', 'neg': 'negative'}
+    positive_words = get_words_frequency(positive_texts, labels['pos'])
+    negative_words = get_words_frequency(negative_texts, labels['neg'])
+
+    # retrieve just the  'X' top more frequent words.
+    top = top_words
+    top_positive_words = positive_words[:top]
+    top_negative_words = negative_words[:top]
+
+    all_words = join_frequencies(top_positive_words, top_negative_words, labels)
+    return all_words
+
+
 def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
     data = copy.deepcopy(data)
     word_data = data["words"]

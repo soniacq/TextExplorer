@@ -9,6 +9,7 @@ VisualTextAnalyzer help users to understand the text data. It includes word freq
 In Jupyter Notebook:
 ~~~~
 import VisualTextAnalyzer
-data = 'lifeexpectancydata.csv'
+import pandas as pd
+data = pd.read_csv('text_data.csv')
 VisualTextAnalyzer.plot_data_summary(data)
 ~~~~

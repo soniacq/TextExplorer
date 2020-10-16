@@ -8,6 +8,15 @@ from collections import defaultdict
 import copy
 import random
 
+import pandas as pd
+import nltk
+import string
+import spacy
+import json
+from spacy import displacy
+
+global_words = {}
+
 def id_generator(size=15):
     """Helper function to generate random div ids. This is useful for embedding
     HTML into ipython notebooks."""
@@ -46,8 +55,11 @@ def getSample(text):
     return result
 
 
-def get_words_frequency(texts, label):
-    print('Analyzing %d documents (%s category)' % (len(texts), label))
+def get_words_frequency(texts, label=None):
+    if label:
+        print('Analyzing %d documents (%s category)' % (len(texts), label))
+    else:
+        print('Analyzing %d documents' % len(texts))
     stopwords = nltk.corpus.stopwords.words('english')
     all_words = {}
     total_words = 0
@@ -56,50 +68,46 @@ def get_words_frequency(texts, label):
         filtered_words = [word for word in words if word.lower() not in stopwords and len(word)>1]
         for filtered_word in filtered_words:
             if filtered_word not in all_words:
-                all_words[filtered_word] = {'word': filtered_word, 'category': label, 'frequency': 0, 'normalized_frequency': 0, 'samples': []}
+                all_words[filtered_word] = {'word': filtered_word, 'freq_abs': 0, 'freq_nor': 0, 'samples': []}
 
-            all_words[filtered_word]['frequency'] += 1
+            all_words[filtered_word]['freq_abs'] += 1
             if idx not in all_words[filtered_word]['samples']:
                 all_words[filtered_word]['samples'].append(idx)
             total_words += 1
 
     sorted_frequencies = []
-    for word_data in sorted(all_words.values(), key= lambda x:x['frequency'], reverse=True):
-        word_data['normalized_frequency'] = round(word_data['frequency']/total_words, 5)
+    for word_data in sorted(all_words.values(), key= lambda x:x['freq_abs'], reverse=True):
+        word_data['freq_nor'] = round(word_data['freq_abs']/total_words, 5)
         sorted_frequencies.append(word_data)
 
     return sorted_frequencies
 
 
-def join_frequencies(positive_words, negative_words, labels):
+def join_frequencies(positive_words, negative_words):
     positive_frequencies = {w['word']: w for w in positive_words}
     negative_frequencies = {w['word']: w for w in negative_words}
+    all_words = {}
 
-    all_words = []
     for word in set(list(positive_frequencies.keys()) + list(negative_frequencies.keys())):
-        pos = {}
-        neg = {}
+        all_words[word] = {'word': word, 'freq_abs_pos': 0, 'freq_nor_pos': 0, 'samples_pos': [],
+                           'freq_abs_neg': 0, 'freq_nor_neg': 0, 'samples_neg': []}
         if word in positive_frequencies:
-            pos = positive_frequencies[word]
-        else:
-            pos = {'word': word, 'category': labels['pos'], 'frequency': 0, 'normalized_frequency': 0, 'samples': []}
+            all_words[word]['freq_abs_pos'] = positive_frequencies[word]['freq_abs']
+            all_words[word]['freq_nor_pos'] = positive_frequencies[word]['freq_nor']
+            all_words[word]['samples_pos'] = positive_frequencies[word]['samples']
         if word in negative_frequencies:
-            neg = negative_frequencies[word]
-        else:
-            neg = {'word': word, 'category': labels['neg'], 'frequency': 0, 'normalized_frequency': 0, 'samples': []}
+            all_words[word]['freq_abs_neg'] = negative_frequencies[word]['freq_abs']
+            all_words[word]['freq_nor_neg'] = negative_frequencies[word]['freq_nor']
+            all_words[word]['samples_neg'] = negative_frequencies[word]['samples']
 
-        frequency_difference = abs(pos["frequency"]-neg["frequency"])
-        normalized_frequency_difference = abs(pos["normalized_frequency"]-neg["normalized_frequency"])
-        pos['frequency_diff_pos_neg'] = frequency_difference
-        neg['frequency_diff_pos_neg'] = frequency_difference
-        pos['normalized_frequency_diff_pos_neg'] = normalized_frequency_difference
-        neg['normalized_frequency_diff_pos_neg'] = normalized_frequency_difference
-        all_words.append(pos)
-        all_words.append(neg)
+        all_words[word]['freq_total'] = all_words[word]['freq_abs_pos'] + all_words[word]['freq_abs_neg']
+        all_words[word]['difference'] = abs(all_words[word]['freq_abs_pos'] - all_words[word]['freq_abs_neg'])
+
     return all_words
 
 
-def get_top_words (data, top_words):
+def get_words (data):
+    global global_words
     positive_class = data[data['articleofinterest']==1]
     negative_class = data[data['articleofinterest']==0]
 
@@ -110,13 +118,20 @@ def get_top_words (data, top_words):
     positive_words = get_words_frequency(positive_texts, labels['pos'])
     negative_words = get_words_frequency(negative_texts, labels['neg'])
 
-    # retrieve just the  'X' top more frequent words.
-    top = top_words
-    top_positive_words = positive_words[:top]
-    top_negative_words = negative_words[:top]
-
-    all_words = join_frequencies(top_positive_words, top_negative_words, labels)
+    all_words = join_frequencies(positive_words, negative_words)
+    global_words = all_words
     return all_words
+
+
+def sort_words(all_words, top_words=10, x_axis='frep_total'):
+    if x_axis == 'freq_abs_pos':
+        return sorted(all_words.values(), key= lambda x:x['freq_abs_pos'], reverse=True)[:top_words]
+    elif x_axis == 'freq_abs_neg':
+        return sorted(all_words.values(), key= lambda x:x['freq_abs_neg'], reverse=True)[:top_words]
+    elif x_axis in 'difference':
+        return sorted(all_words.values(), key= lambda x:x['difference'], reverse=True)[:top_words]
+    else: # Do the default
+        return sorted(all_words.values(), key= lambda x:x['freq_total'], reverse=True)[:top_words]
 
 
 def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
@@ -135,7 +150,7 @@ def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
                 "category":"positive",
                 "normalized_frequency":el["freq_nor_pos"],
                 "frequency":el["freq_abs_pos"],
-                "normalized_frequency_diff_pos_neg": abs(el["freq_nor_pos"]-el["freq_nor_neg"]),
+                "normalized_frequency_diff_pos_neg": el["difference"],
                 "frequency_diff_pos_neg": abs(el["freq_abs_pos"]-el["freq_abs_neg"]),
                 "samples": el["samples_pos"]
             }
@@ -145,7 +160,7 @@ def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
                 "category":"negative",
                 "normalized_frequency":el["freq_nor_neg"],
                 "frequency":el["freq_abs_neg"],
-                "normalized_frequency_diff_pos_neg": abs(el["freq_nor_pos"]-el["freq_nor_neg"]),
+                "normalized_frequency_diff_pos_neg": el["difference"],
                 "frequency_diff_pos_neg": abs(el["freq_abs_pos"]-el["freq_abs_neg"]),
                 "samples": el["samples_neg"]
             }
@@ -191,89 +206,91 @@ def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
 def plot_text_summary(data):
     from IPython.core.display import display, HTML
     id = id_generator()
-    data_dict = prepare_data(data)
+    all_words = get_words(data)
+    sorted_words = sort_words(all_words)
+    data_dict = prepare_data({"words": sorted_words, "entities" :{}})
     html_all = make_html(data_dict, id)
     display(HTML(html_all))
 
 
-def get_words_frequency(texts):
-    print('Analyzing %d documents' % len(texts))
-    stopwords = nltk.corpus.stopwords.words('english')
-    all_words = {}
-    total_words = 0
-    for text in texts:
-        words = nltk.word_tokenize(text)
-        filtered_words = [word for word in words if word.lower() not in stopwords and len(word)>1]
-        for filtered_word in filtered_words:
-            if filtered_word not in all_words:
-                all_words[filtered_word] = {'word': filtered_word, 'freq_abs': 0, 'freq_nor': 0, 'samples': []}
+# def get_words_frequency(texts):
+#     print('Analyzing %d documents' % len(texts))
+#     stopwords = nltk.corpus.stopwords.words('english')
+#     all_words = {}
+#     total_words = 0
+#     for text in texts:
+#         words = nltk.word_tokenize(text)
+#         filtered_words = [word for word in words if word.lower() not in stopwords and len(word)>1]
+#         for filtered_word in filtered_words:
+#             if filtered_word not in all_words:
+#                 all_words[filtered_word] = {'word': filtered_word, 'freq_abs': 0, 'freq_nor': 0, 'samples': []}
                 
-            all_words[filtered_word]['freq_abs'] += 1
-            if len(all_words[filtered_word]['samples']) <= 10:
-                all_words[filtered_word]['samples'].append(text)
-            total_words += 1
+#             all_words[filtered_word]['freq_abs'] += 1
+#             if len(all_words[filtered_word]['samples']) <= 10:
+#                 all_words[filtered_word]['samples'].append(text)
+#             total_words += 1
             
-    sorted_frequencies = []
-    for word_data in sorted(all_words.values(), key= lambda x:x['freq_abs'], reverse=True):
-        word_data['freq_nor'] = round(word_data['freq_abs']/total_words, 5)
-        sorted_frequencies.append(word_data)
+#     sorted_frequencies = []
+#     for word_data in sorted(all_words.values(), key= lambda x:x['freq_abs'], reverse=True):
+#         word_data['freq_nor'] = round(word_data['freq_abs']/total_words, 5)
+#         sorted_frequencies.append(word_data)
     
-    return sorted_frequencies
+#     return sorted_frequencies
 
 
-def get_entities_frequency(texts):
-    print('Analyzing %d documents' % len(texts))
-    alias = {'ORG':'ORGANIZATION', 'LOC':'PLACE', 'GPE':'CITY/COUNTRY', 'NORP':'GROUP', 'FAC':'BUILDING'}
-    unique_entities = {}
+# def get_entities_frequency(texts):
+#     print('Analyzing %d documents' % len(texts))
+#     alias = {'ORG':'ORGANIZATION', 'LOC':'PLACE', 'GPE':'CITY/COUNTRY', 'NORP':'GROUP', 'FAC':'BUILDING'}
+#     unique_entities = {}
 
-    for doc in nlp.pipe(texts, n_threads=16, batch_size=100):
-        for entity in doc.ents:
-            if entity.label_ in {'CARDINAL', 'ORDINAL', 'QUANTITY'}:
-                continue
-            entity_type = alias.get(entity.label_, entity.label_)
-            entity_name = entity.text
-            if entity_name in {'Deir Ezzor', 'Daraa', 'Idlib', 'Aleppo'}:
-                entity_type = 'CITY/COUNTRY'
-            if entity_type not in unique_entities:
-                unique_entities[entity_type] = {}
-            if entity_name not in unique_entities[entity_type]:
-                unique_entities[entity_type][entity_name] = {'word': entity_name, 'freq_abs': 0, 'freq_nor': 0, 'samples': []}
+#     for doc in nlp.pipe(texts, n_threads=16, batch_size=100):
+#         for entity in doc.ents:
+#             if entity.label_ in {'CARDINAL', 'ORDINAL', 'QUANTITY'}:
+#                 continue
+#             entity_type = alias.get(entity.label_, entity.label_)
+#             entity_name = entity.text
+#             if entity_name in {'Deir Ezzor', 'Daraa', 'Idlib', 'Aleppo'}:
+#                 entity_type = 'CITY/COUNTRY'
+#             if entity_type not in unique_entities:
+#                 unique_entities[entity_type] = {}
+#             if entity_name not in unique_entities[entity_type]:
+#                 unique_entities[entity_type][entity_name] = {'word': entity_name, 'freq_abs': 0, 'freq_nor': 0, 'samples': []}
                 
-            unique_entities[entity_type][entity_name]['freq_abs'] += 1
+#             unique_entities[entity_type][entity_name]['freq_abs'] += 1
             
-            if len(unique_entities[entity_type][entity_name]['samples']) <= 10:
-                unique_entities[entity_type][entity_name]['samples'].append(doc.text)
+#             if len(unique_entities[entity_type][entity_name]['samples']) <= 10:
+#                 unique_entities[entity_type][entity_name]['samples'].append(doc.text)
             
-    for entity_type in unique_entities.keys():
-        total_words = sum([x['freq_abs'] for x in unique_entities[entity_type].values()])
-        sorted_frequencies = []
-        for word_data in sorted(unique_entities[entity_type].values(), key= lambda x:x['freq_abs'], reverse=True):
-            word_data['freq_nor'] = round(word_data['freq_abs']/total_words, 5)
-            sorted_frequencies.append(word_data)
-        unique_entities[entity_type] = sorted_frequencies
-    return unique_entities
+#     for entity_type in unique_entities.keys():
+#         total_words = sum([x['freq_abs'] for x in unique_entities[entity_type].values()])
+#         sorted_frequencies = []
+#         for word_data in sorted(unique_entities[entity_type].values(), key= lambda x:x['freq_abs'], reverse=True):
+#             word_data['freq_nor'] = round(word_data['freq_abs']/total_words, 5)
+#             sorted_frequencies.append(word_data)
+#         unique_entities[entity_type] = sorted_frequencies
+#     return unique_entities
 
 
-def join_frequencies(positive_words, negative_words):
-    positive_frequencies = {w['word']: w for w in positive_words}
-    negative_frequencies = {w['word']: w for w in negative_words}
-    all_words = {}
+# def join_frequencies(positive_words, negative_words):
+#     positive_frequencies = {w['word']: w for w in positive_words}
+#     negative_frequencies = {w['word']: w for w in negative_words}
+#     all_words = {}
     
-    for word in set(list(positive_frequencies.keys()) + list(negative_frequencies.keys())):
-        all_words[word] = {'word': word, 'freq_abs_pos': 0, 'freq_nor_pos': 0, 'samples_pos': [],
-                           'freq_abs_neg': 0, 'freq_nor_neg': 0, 'samples_neg': []}
-        if word in positive_frequencies:
-            all_words[word]['freq_abs_pos'] = positive_frequencies[word]['freq_abs']
-            all_words[word]['freq_nor_pos'] = positive_frequencies[word]['freq_nor']
-            all_words[word]['samples_pos'] = positive_frequencies[word]['samples']
-        if word in negative_frequencies:
-            all_words[word]['freq_abs_neg'] = negative_frequencies[word]['freq_abs']
-            all_words[word]['freq_nor_neg'] = negative_frequencies[word]['freq_nor']
-            all_words[word]['samples_neg'] = negative_frequencies[word]['samples']
+#     for word in set(list(positive_frequencies.keys()) + list(negative_frequencies.keys())):
+#         all_words[word] = {'word': word, 'freq_abs_pos': 0, 'freq_nor_pos': 0, 'samples_pos': [],
+#                            'freq_abs_neg': 0, 'freq_nor_neg': 0, 'samples_neg': []}
+#         if word in positive_frequencies:
+#             all_words[word]['freq_abs_pos'] = positive_frequencies[word]['freq_abs']
+#             all_words[word]['freq_nor_pos'] = positive_frequencies[word]['freq_nor']
+#             all_words[word]['samples_pos'] = positive_frequencies[word]['samples']
+#         if word in negative_frequencies:
+#             all_words[word]['freq_abs_neg'] = negative_frequencies[word]['freq_abs']
+#             all_words[word]['freq_nor_neg'] = negative_frequencies[word]['freq_nor']
+#             all_words[word]['samples_neg'] = negative_frequencies[word]['samples']
         
-        all_words[word]['freq_total'] = all_words[word]['freq_nor_pos'] + all_words[word]['freq_nor_neg']
+#         all_words[word]['freq_total'] = all_words[word]['freq_nor_pos'] + all_words[word]['freq_nor_neg']
             
         
-    all_words_sorted = sorted(all_words.values(), key= lambda x:x['freq_total'], reverse=True)
+#     all_words_sorted = sorted(all_words.values(), key= lambda x:x['freq_total'], reverse=True)
     
-    return all_words_sorted
+#     return all_words_sorted

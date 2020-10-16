@@ -26,5 +26,9 @@ setup(
         "scipy",
         "scikit-learn",
         "notebook",
+        "pandas",
+        "nltk",
+        "string",
+        "spacy"
     ]
 )

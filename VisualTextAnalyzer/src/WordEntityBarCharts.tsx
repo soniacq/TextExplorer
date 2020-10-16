@@ -525,13 +525,14 @@ class WordEntityBarCharts extends React.PureComponent<
                 style={{height: 150, overflowY: 'auto'}}
               >
                 {JSON.parse(this.state.info).samples && (
-                  <ReactMarkdown
-                    source={JSON.parse(this.state.info).samples[0].replace(
-                      new RegExp(JSON.parse(this.state.info).word, 'gi'),
-                      (match: string) => `<mark>${match}</mark>`
-                    )}
-                    escapeHtml={false}
-                  />
+                  JSON.parse(this.state.info).samples[0]
+                  // <ReactMarkdown
+                  //   source={JSON.parse(this.state.info).samples[0].replace(
+                  //     new RegExp(JSON.parse(this.state.info).word, 'gi'),
+                  //     (match: string) => `<mark>${match}</mark>`
+                  //   )}
+                  //   escapeHtml={false}
+                  // />
                 )}
               </div>
             </div>

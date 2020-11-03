@@ -207,7 +207,7 @@ def get_entities (positive_texts, negative_texts, labels):
         if entity_type not in positive_entities.keys():
             positive_entities[entity_type]={}
         if entity_type not in negative_entities.keys():
-            positive_entities[entity_type]={} 
+            negative_entities[entity_type]={}
         extracted_data[entity_type] = join_frequencies(positive_entities[entity_type], negative_entities[entity_type])
     return extracted_data
 

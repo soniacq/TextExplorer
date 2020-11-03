@@ -7,14 +7,22 @@ import {TopLevelSpec as VlSpec, compile} from 'vega-lite';
 import './WordEntityBarCharts.css';
 
 import ReactMarkdown from 'react-markdown';
-import {DataSample} from './types';
+import {DataSample, RequestResult} from './types';
 export const vegaLite = vegaLiteImport;
+import CommAPI from './CommAPI';
 
 enum SortedByOptions {
   BYBOTH = 'Both categories',
   BYDIFFERENCE = 'Difference',
   BYPOSITIVE = 'Positive category',
   BYNEGATIVE = 'Negative category',
+}
+
+enum Yaxis {
+  BYBOTH = 'Top words',
+  BYDIFFERENCE = 'Top words based on the differences',
+  BYPOSITIVE = 'Top words in positive category',
+  BYNEGATIVE = 'Top words in negative category',
 }
 
 enum SelectedColumn {
@@ -38,6 +46,7 @@ interface WordEntityBarChartsProps {
 }
 
 interface WordEntityBarChartsState {
+  processedData: DataSample;
   info: string;
   vegaSpec: VgSpec;
   vegaEntitySpec: VgSpec;
@@ -46,6 +55,8 @@ interface WordEntityBarChartsState {
   sortedFieldBy: string;
   selectedColumn: string;
   selectedColumnName: string;
+  selectedYaxis: string;
+  sampleText: string;
 }
 
 class WordEntityBarCharts extends React.PureComponent<
@@ -55,9 +66,12 @@ class WordEntityBarCharts extends React.PureComponent<
   handlers: {
     tooltip: (...args: unknown[]) => void;
   };
+  commGetYAxis: CommAPI;
+  commGetTextSample: CommAPI;
   constructor(props: WordEntityBarChartsProps) {
     super(props);
     this.state = {
+      processedData: this.props.hit,
       info: '{}',
       vegaSpec: {},
       vegaEntitySpec: {},
@@ -66,7 +80,27 @@ class WordEntityBarCharts extends React.PureComponent<
       sortedFieldBy: SortedByOptions.BYBOTH,
       selectedColumn: SelectedColumn.FREQUENCY,
       selectedColumnName: SelectedColumnName.FREQUENCY,
+      selectedYaxis: Yaxis.BYBOTH,
+      sampleText: '',
     };
+    this.commGetYAxis = new CommAPI(
+      'get_yaxis_values_comm_api',
+      (msg: RequestResult) => {
+        this.setSpecifications(msg['updated_data']);
+        this.setState({
+          processedData: msg['updated_data'],
+          sortedFieldBy: SortedByOptions.BYBOTH,
+          selectedColumn: SelectedColumn.FREQUENCY,
+          selectedColumnName: SelectedColumnName.FREQUENCY,
+        });
+      }
+    );
+    this.commGetTextSample = new CommAPI(
+      'get_text_comm_api',
+      (msg: {text: string}) => {
+        this.setState({sampleText: msg['text']});
+      }
+    );
     this.handleHover = this.handleHover.bind(this);
     this.onChangeSortedBy = this.onChangeSortedBy.bind(this);
     this.onChangeSelectedValue = this.onChangeSelectedValue.bind(this);
@@ -74,6 +108,10 @@ class WordEntityBarCharts extends React.PureComponent<
   }
   componentDidMount() {
     const {hit} = this.props;
+    this.setSpecifications(hit);
+  }
+
+  setSpecifications(hit: DataSample) {
     const wordData = {
       values: hit.words,
     };
@@ -277,7 +315,11 @@ class WordEntityBarCharts extends React.PureComponent<
   }
 
   handleHover(...args: unknown[]) {
-    this.setState({info: JSON.stringify(args[1])});
+    const info = JSON.stringify(args[1]);
+    this.setState({info: info});
+    if (JSON.parse(info).samples) {
+      this.getSampleText(JSON.parse(info).samples[0], JSON.parse(info).category);
+    }
   }
 
   async setVegaSpecification(spec: string) {
@@ -381,13 +423,21 @@ class WordEntityBarCharts extends React.PureComponent<
     }
   }
 
+  onChangeSelectedYAxis(value: string) {
+    this.commGetYAxis.call({selected_yaxis: value});
+    this.setState({selectedYaxis: value});
+  }
+  getSampleText(id: number, category: string) {
+    this.commGetTextSample.call({id: id, category: category});
+  }
+
   render() {
-    const {hit} = this.props;
+    const {processedData} = this.state;
     const wordData = {
-      values: hit.words,
+      values: processedData.words,
     };
     const entityData = {
-      values: hit.entities,
+      values: processedData.entities,
     };
 
     return (
@@ -396,10 +446,24 @@ class WordEntityBarCharts extends React.PureComponent<
           <h3>Text Analysis: Word Frenquecy and Entity Recognition</h3>
         </div>
         <div className="row">
+          <div className="col-xs-4">
+            <label className="marginlabel"> X axis </label>
+            <select
+              className="bootstrap-select badge badge-pill badge-primary"
+              value={this.state.selectedYaxis}
+              onChange={e => {
+                this.onChangeSelectedYAxis(e.target.value);
+              }}
+            >
+              {Object.values(Yaxis).map(unit => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="col-xs-3">
-            <label className="mdb-main-label bold">
-              <b>Data</b>{' '}
-            </label>
+            <label className="marginlabel"> Y axis </label>
             <select
               className="bootstrap-select badge badge-pill badge-primary"
               value={this.state.selectedColumn}
@@ -414,10 +478,8 @@ class WordEntityBarCharts extends React.PureComponent<
               ))}
             </select>
           </div>
-          <div className="col-xs-9">
-            <label className="mdb-main-label ml-2">
-              <b>Sorted by</b>
-            </label>
+          <div className="col-xs-4">
+            <label className="marginlabel"> Sorted by </label>
             <select
               className="bootstrap-select badge badge-pill badge-primary  ml-2"
               value={this.state.sortedFieldBy}
@@ -525,14 +587,13 @@ class WordEntityBarCharts extends React.PureComponent<
                 style={{height: 150, overflowY: 'auto'}}
               >
                 {JSON.parse(this.state.info).samples && (
-                  JSON.parse(this.state.info).samples[0]
-                  // <ReactMarkdown
-                  //   source={JSON.parse(this.state.info).samples[0].replace(
-                  //     new RegExp(JSON.parse(this.state.info).word, 'gi'),
-                  //     (match: string) => `<mark>${match}</mark>`
-                  //   )}
-                  //   escapeHtml={false}
-                  // />
+                  <ReactMarkdown
+                    source={this.state.sampleText.replace(
+                      new RegExp(JSON.parse(this.state.info).word, 'gi'),
+                      (match: string) => `<mark>${match}</mark>`
+                    )}
+                    escapeHtml={false}
+                  />
                 )}
               </div>
             </div>

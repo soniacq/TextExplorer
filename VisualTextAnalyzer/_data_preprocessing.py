@@ -17,7 +17,52 @@ from spacy import displacy
 
 nlp = spacy.load('en_core_web_sm')
 global_words = {}
+global_processed_data = {}
 top_words=10
+global_positive_texts = []
+global_negative_texts = []
+
+# y_axis could be:
+# - freq_total
+# - difference
+# - freq_abs_pos
+# - freq_abs_neg
+
+# enum Yaxis {
+#   BYBOTH = 'Top words',
+#   BYDIFFERENCE = 'Top words based on the differences',
+#   BYPOSITIVE = 'Top words in positive category',
+#   BYNEGATIVE = 'Top words in negative category',
+# }
+
+def update_yaxis(y_axis):
+    sorted_data = sort_words_and_entities(global_processed_data, top_words, y_axis)
+    data_dict = prepare_data(sorted_data)
+    return data_dict
+def comm_get_yaxis_values(msg):
+    selected_yaxis = msg['selected_yaxis']
+    if (selected_yaxis == "Top words"):
+        return {"updated_data": update_yaxis('freq_total')}
+    if (selected_yaxis == "Top words based on the differences"):
+        return {"updated_data": update_yaxis('difference')}
+    if (selected_yaxis == "Top words in positive category"):
+        return {"updated_data": update_yaxis('freq_abs_pos')}
+    if (selected_yaxis == "Top words in negative category"):
+        return {"updated_data": update_yaxis('freq_abs_neg')}
+    return {"updated_data": update_yaxis('freq_total')}
+setup_comm_api('get_yaxis_values_comm_api', comm_get_yaxis_values)
+
+
+def comm_get_text(msg):
+    id = msg['id']
+    category = msg['category']
+    if (category == 'positive'):
+        return {"text": global_positive_texts[id]}
+    # then it belongs to the negative category
+    else:
+        return {"text": global_negative_texts[id]}
+setup_comm_api('get_text_comm_api', comm_get_text)
+
 
 def id_generator(size=15):
     """Helper function to generate random div ids. This is useful for embedding
@@ -27,25 +72,25 @@ def id_generator(size=15):
 
 
 def make_html(data_dict, id):
-	lib_path = pkg_resources.resource_filename(__name__, "build/textExplorer.js")
-	bundle = open(lib_path, "r", encoding="utf8").read()
-	html_all = """
-	<html>
-	<head>
-	</head>
-	<body>
-	    <script>
-	    {bundle}
-	    </script>
-	    <div id="{id}">
-	    </div>
-	    <script>
-	        textExplorer.renderProfilerViewBundle("#{id}", {data_dict});
-	    </script>
-	</body>
-	</html>
-	""".format(bundle=bundle, id=id, data_dict=json.dumps(data_dict))
-	return html_all
+    lib_path = pkg_resources.resource_filename(__name__, "build/textExplorer.js")
+    bundle = open(lib_path, "r", encoding="utf8").read()
+    html_all = """
+    <html>
+    <head>
+    </head>
+    <body>
+        <script>
+        {bundle}
+        </script>
+        <div id="{id}">
+        </div>
+        <script>
+            textExplorer.renderProfilerViewBundle("#{id}", {data_dict});
+        </script>
+    </body>
+    </html>
+    """.format(bundle=bundle, id=id, data_dict=json.dumps(data_dict))
+    return html_all
 
 def getSample(text):
     lines = text.split('\n')
@@ -115,8 +160,8 @@ def get_words (positive_texts, negative_texts, labels):
     return all_words
 
 
-def sort_words(all_words, top_words=10, x_axis='freq_total'):
-    return sorted(all_words.values(), key= lambda x:x[x_axis], reverse=True)[:top_words]
+def sort_words(all_words, top_words=10, y_axis='freq_total'):
+    return sorted(all_words.values(), key= lambda x:x[y_axis], reverse=True)[:top_words]
 
 
 def get_entities_frequency(texts, label=None):
@@ -167,36 +212,43 @@ def get_entities (positive_texts, negative_texts, labels):
     return extracted_data
 
 
-def sort_entities(all_entities, top_words=10, x_axis='freq_total'):
+def sort_entities(all_entities, top_words=10, y_axis='freq_total'):
     sorted_entities = {}
     for entity_name in all_entities.keys():
-        sorted_entities[entity_name] = sorted(all_entities[entity_name].values(), key= lambda x:x[x_axis], reverse=True)[:top_words]
+        sorted_entities[entity_name] = sorted(all_entities[entity_name].values(), key= lambda x:x[y_axis], reverse=True)[:top_words]
     return sorted_entities
 
 
-def sort_words_and_entities(data, top_words=10, x_axis='freq_total'):
+def sort_words_and_entities(data, top_words=10, y_axis='freq_total'):
     sorted_data = {}
     for key in data.keys():
         if key == 'words':
-            sorted_data[key] = sort_words(data[key], top_words, x_axis)
+            sorted_data[key] = sort_words(data[key], top_words, y_axis)
         if key == 'entities':
-            sorted_data[key] = sort_entities(data[key], top_words, x_axis)
+            sorted_data[key] = sort_entities(data[key], top_words, y_axis)
     return sorted_data
 
 
-def get_words_and_entities (data):
+def get_words_and_entities (data, category_column, text_column, positive_label, negative_label):
+    global global_processed_data
+    global global_positive_texts
+    global global_negative_texts
     output_data = {}
-    positive_class = data[data['articleofinterest']==1]
-    negative_class = data[data['articleofinterest']==0]
+    positive_class = data[data[category_column]==positive_label]
+    negative_class = data[data[category_column]==negative_label]
 
-    positive_texts = [str(x) for x in positive_class['article'].tolist()] # list of texts
-    negative_texts = [str(x) for x in negative_class['article'].tolist()] # list of texts
+    positive_texts = [str(x) for x in positive_class[text_column].tolist()] # list of texts
+    negative_texts = [str(x) for x in negative_class[text_column].tolist()] # list of texts
 
     labels = {'pos': 'positive', 'neg': 'negative'}
     print('Word Frequency:')
     output_data["words"] =  get_words (positive_texts, negative_texts, labels)
     print('Named Entity Recognition:')
     output_data["entities"] = get_entities (positive_texts, negative_texts, labels)
+
+    global_processed_data = output_data
+    global_positive_texts = positive_texts
+    global_negative_texts = negative_texts
     return output_data
 
 
@@ -214,7 +266,7 @@ def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
             "category":"positive",
             "normalized_frequency":el["freq_nor_pos"],
             "frequency":el["freq_abs_pos"],
-            "normalized_frequency_diff_pos_neg": el["difference"],
+            "normalized_frequency_diff_pos_neg": abs(el["freq_nor_pos"]-el["freq_nor_neg"]),
             "frequency_diff_pos_neg": abs(el["freq_abs_pos"]-el["freq_abs_neg"]),
             "samples": el["samples_pos"]
         }
@@ -224,13 +276,13 @@ def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
             "category":"negative",
             "normalized_frequency":el["freq_nor_neg"],
             "frequency":el["freq_abs_neg"],
-            "normalized_frequency_diff_pos_neg": el["difference"],
+            "normalized_frequency_diff_pos_neg": abs(el["freq_nor_pos"]-el["freq_nor_neg"]),
             "frequency_diff_pos_neg": abs(el["freq_abs_pos"]-el["freq_abs_neg"]),
             "samples": el["samples_neg"]
         }
         word_data_JSON.append(row_neg)
 
-    for key in data["entities"].keys():
+    for key in entity_data.keys():
         if (key == 'ORGANIZATION' or key == 'PERSON' or key == 'CITY/COUNTRY' ):
             for el in data["entities"][key]:
                 row_pos = {
@@ -264,11 +316,12 @@ def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
     return search_results
 
 
-def plot_text_summary(data):
+def plot_text_summary(data, category_column='articleofinterest', text_column='article', positive_label=1, negative_label=0):
     from IPython.core.display import display, HTML
     id = id_generator()
-    processed_data = get_words_and_entities(data)
-    sorted_data = sort_words_and_entities(processed_data, top_words)
+    processed_data = get_words_and_entities(data,category_column, text_column, positive_label, negative_label)
+    y_axis='freq_total'
+    sorted_data = sort_words_and_entities(processed_data, top_words, y_axis)
     data_dict = prepare_data(sorted_data)
     html_all = make_html(data_dict, id)
     display(HTML(html_all))

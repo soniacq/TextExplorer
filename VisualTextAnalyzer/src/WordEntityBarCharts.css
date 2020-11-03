@@ -4,3 +4,8 @@
     border: '1px solid rgba(0, 0, 0, .125)';
     box-shadow: 'none';
 }
+.marginlabel {
+    margin-right:5px;
+    display:inline-block;
+    font-weight: bold;
+}

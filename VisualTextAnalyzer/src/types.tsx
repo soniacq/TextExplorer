@@ -3,6 +3,9 @@ export interface DataSample {
   words: Metadata;
   entities: Metadata;
 }
+export interface RequestResult {
+  updated_data: DataSample;
+}
 
 export interface Metadata {
   entity_type?: string;

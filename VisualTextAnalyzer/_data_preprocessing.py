@@ -316,7 +316,7 @@ def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
     return search_results
 
 
-def plot_text_summary(data, category_column='articleofinterest', text_column='article', positive_label=1, negative_label=0):
+def plot_text_summary(data, category_column='category', text_column='text', positive_label=1, negative_label=0):
     from IPython.core.display import display, HTML
     id = id_generator()
     processed_data = get_words_and_entities(data,category_column, text_column, positive_label, negative_label)

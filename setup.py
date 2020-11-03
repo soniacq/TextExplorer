@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="visual-text-explorer",
-    version="0.1.0",
+    version="0.1.1",
     author="Sonia Castelo",
     author_email="s.castelo@nyu.edu",
     description="Visual Text Explorer tool. Enables the exploration and text analysis through word frequency and named entity recognition in Jupyter Notebooks",

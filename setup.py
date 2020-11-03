@@ -28,7 +28,6 @@ setup(
         "notebook",
         "pandas",
         "nltk",
-        "string",
         "spacy"
     ]
 )

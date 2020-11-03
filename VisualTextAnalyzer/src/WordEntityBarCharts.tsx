@@ -495,15 +495,15 @@ class WordEntityBarCharts extends React.PureComponent<
             </select>
           </div>
         </div>
-        <div className="accordion" id="accordionExample">
+        <div className="accordion" id={"accordion_word" + processedData.id}>
           <div className="card">
             <div
               className="card-header"
-              id="headingOne"
+              id={"heading_word" + processedData.id}
               data-toggle="collapse"
-              data-target="#collapseOne"
+              data-target={"#collapse_word" + processedData.id}
               aria-expanded="true"
-              aria-controls="collapseOne"
+              aria-controls={"collapse_word" + processedData.id}
             >
               <h2 className="mb-0">
                 <button className="btn btn-link collapsed" type="button">
@@ -512,10 +512,10 @@ class WordEntityBarCharts extends React.PureComponent<
               </h2>
             </div>
             <div
-              id="collapseOne"
+              id={"collapse_word" + processedData.id}
               className="collapse"
-              aria-labelledby="headingOne"
-              data-parent="#accordionExample"
+              aria-labelledby={"heading_word" + processedData.id}
+              data-parent={"#accordion_word" + processedData.id}
             >
               <div className="card-body">
                 <Vega
@@ -527,15 +527,15 @@ class WordEntityBarCharts extends React.PureComponent<
             </div>
           </div>
         </div>
-        <div className="accordion" id="accordionExample2">
+        <div className="accordion" id={"accordion_entity" + processedData.id}>
           <div className="card">
             <div
               className="card-header"
-              id="headingTwo"
+              id={"heading_entity" + processedData.id}
               data-toggle="collapse"
-              data-target="#collapseTwo"
+              data-target={"#collapse_entity" + processedData.id}
               aria-expanded="true"
-              aria-controls="collapseTwo"
+              aria-controls={"collapse_entity" + processedData.id}
             >
               <h2 className="mb-0">
                 <button className="btn btn-link collapsed" type="button">
@@ -544,10 +544,10 @@ class WordEntityBarCharts extends React.PureComponent<
               </h2>
             </div>
             <div
-              id="collapseTwo"
+              id={"collapse_entity" + processedData.id}
               className="collapse"
-              aria-labelledby="headingTwo"
-              data-parent="#accordionExample2"
+              aria-labelledby={"heading_entity" + processedData.id}
+              data-parent={"#accordion_entity" + processedData.id}
             >
               <div className="card-body">
                 <Vega
@@ -559,11 +559,11 @@ class WordEntityBarCharts extends React.PureComponent<
             </div>
           </div>
         </div>
-        <div className="accordion" id="accordionExample3">
+        <div className="accordion" id={"accordion_sampletext" + processedData.id}>
           <div className="card">
             <div
               className="card-header"
-              id="headingThree"
+              id={"heading_sampletext" + processedData.id}
               data-toggle="collapse"
               aria-expanded="true"
             >
@@ -577,10 +577,10 @@ class WordEntityBarCharts extends React.PureComponent<
               </h4>
             </div>
             <div
-              id="collapseThree"
+              id={"collapse_sampletext" + processedData.id}
               className="collapse show"
-              aria-labelledby="headingThree"
-              data-parent="#accordionExample3"
+              aria-labelledby={"heading_sampletext" + processedData.id}
+              data-parent={"#accordion_sampletext" + processedData.id}
             >
               <div
                 className="card-body"

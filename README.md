@@ -4,12 +4,21 @@ VisualTextAnalyzer help users to understand the text data. It includes word freq
 
 ![Visual Text Analyzer](https://github.com/soniacq/TextExplorer/blob/master/imgs/plot_text_summary.png)
 
-## Data Exploration
+## Text Exploration
 
 In Jupyter Notebook:
 ~~~~
 import VisualTextAnalyzer
 import pandas as pd
-data = pd.read_csv('text_data.csv')
-VisualTextAnalyzer.plot_data_summary(data)
+data = pd.read_csv('yelp_labelled_sample.csv')
+VisualTextAnalyzer.plot_text_summary(data, category_column='category', text_column='comments')
+~~~~
+
+## Demo
+
+In Jupyter Notebook::
+~~~~
+import VisualTextAnalyzer
+yelp_data = VisualTextAnalyzer.get_yelp_labelled_data()
+VisualTextAnalyzer.plot_text_summary(yelp_data, category_column='category', text_column='comments')
 ~~~~

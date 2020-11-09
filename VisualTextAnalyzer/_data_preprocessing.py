@@ -15,10 +15,9 @@ import spacy
 import json
 from spacy import displacy
 
-nlp = spacy.load('en_core_web_sm')
-global_words = {}
-global_processed_data = {}
 top_words=10
+
+global_processed_data = {}
 global_positive_texts = []
 global_negative_texts = []
 
@@ -165,6 +164,7 @@ def sort_words(all_words, top_words=10, y_axis='freq_total'):
 
 
 def get_entities_frequency(texts, label=None):
+    nlp = spacy.load('en_core_web_sm')
     if label:
         print('Analyzing %d documents (%s category)' % (len(texts), label))
     else:

@@ -21,6 +21,8 @@ global_processed_data = {}
 global_positive_texts = []
 global_negative_texts = []
 
+exported_texts = {}
+
 # y_axis could be:
 # - freq_total
 # - difference
@@ -62,6 +64,25 @@ def comm_get_text(msg):
         return {"text": global_negative_texts[id]}
 setup_comm_api('get_text_comm_api', comm_get_text)
 
+def comm_export_all_texts(msg):
+    global exported_texts
+    indices = msg['ids']
+    category = msg['category']
+    text_info = {}
+    if (category == 'positive'):
+        text_info['texts'] = np.take(global_positive_texts, indices)
+    # then it belongs to the negative category
+    else:
+        text_info['texts'] = np.take(global_negative_texts, indices)
+    text_info['category'] = category
+    text_info['word'] = msg['word']
+    exported_texts = text_info
+    return {"message": "Exported successfully."}
+setup_comm_api('export_all_texts_comm_api', comm_export_all_texts)
+
+def get_exported_texts():
+    global exported_texts
+    return exported_texts
 
 def id_generator(size=15):
     """Helper function to generate random div ids. This is useful for embedding

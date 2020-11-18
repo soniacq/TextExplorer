@@ -9,3 +9,16 @@
     display:inline-block;
     font-weight: bold;
 }
+.card-sampletext {
+    display: flex;
+    margin-top: 14px;
+    justify-content: space-between;
+    vertical-align: middle;
+}
+
+.btn-gray{
+    background-color:#6c757d;
+    border-radius: 4px;
+    color: #FFF;
+}
+.btn-gray:hover{background-color: #545b63; color: rgb(235, 235, 235);}

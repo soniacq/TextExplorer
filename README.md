@@ -22,3 +22,16 @@ import VisualTextAnalyzer
 yelp_data = VisualTextAnalyzer.get_yelp_labelled_data()
 VisualTextAnalyzer.plot_text_summary(yelp_data, category_column='category', text_column='comments')
 ~~~~
+
+## Export Texts
+
+You might want to export a subset of selected texts for further analyses. To do so, use the following code (after exporting it through the UI):
+
+~~~~
+obj_text = VisualTextAnalyzer.get_exported_texts()
+~~~~
+
+The returned object has the following attributes: 
+- texts: List of texts.
+- category: All texts belong to that category.
+- word: All texts contain that word.

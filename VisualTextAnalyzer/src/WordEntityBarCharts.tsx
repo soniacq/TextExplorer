@@ -5,6 +5,8 @@ import {Spec as VgSpec} from 'vega';
 import * as vegaLiteImport from 'vega-lite';
 import {TopLevelSpec as VlSpec, compile} from 'vega-lite';
 import './WordEntityBarCharts.css';
+import {Snackbar, IconButton} from "@material-ui/core";
+import CloseIcon from '@material-ui/icons/Close';
 
 import ReactMarkdown from 'react-markdown';
 import {DataSample, RequestResult} from './types';
@@ -57,6 +59,8 @@ interface WordEntityBarChartsState {
   selectedColumnName: string;
   selectedYaxis: string;
   sampleText: string;
+  responseMessageExport: string;
+  exportedTextsMessage: boolean;
 }
 
 class WordEntityBarCharts extends React.PureComponent<
@@ -68,6 +72,7 @@ class WordEntityBarCharts extends React.PureComponent<
   };
   commGetYAxis: CommAPI;
   commGetTextSample: CommAPI;
+  commExportAllTexts: CommAPI;
   constructor(props: WordEntityBarChartsProps) {
     super(props);
     this.state = {
@@ -82,6 +87,8 @@ class WordEntityBarCharts extends React.PureComponent<
       selectedColumnName: SelectedColumnName.FREQUENCY,
       selectedYaxis: Yaxis.BYBOTH,
       sampleText: '',
+      responseMessageExport: '',
+      exportedTextsMessage: false,
     };
     this.commGetYAxis = new CommAPI(
       'get_yaxis_values_comm_api',
@@ -101,6 +108,13 @@ class WordEntityBarCharts extends React.PureComponent<
         this.setState({sampleText: msg['text']});
       }
     );
+    this.commExportAllTexts = new CommAPI(
+      'export_all_texts_comm_api',
+      (msg: {message: string}) => {
+        this.setState({responseMessageExport: msg['message']});
+      }
+    );
+
     this.handleHover = this.handleHover.bind(this);
     this.onChangeSortedBy = this.onChangeSortedBy.bind(this);
     this.onChangeSelectedValue = this.onChangeSelectedValue.bind(this);
@@ -316,7 +330,7 @@ class WordEntityBarCharts extends React.PureComponent<
 
   handleHover(...args: unknown[]) {
     const info = JSON.stringify(args[1]);
-    this.setState({info: info});
+    this.setState({info: info, responseMessageExport: ''});
     if (JSON.parse(info).samples) {
       this.getSampleText(JSON.parse(info).samples[0], JSON.parse(info).category);
     }
@@ -429,6 +443,10 @@ class WordEntityBarCharts extends React.PureComponent<
   }
   getSampleText(id: number, category: string) {
     this.commGetTextSample.call({id: id, category: category});
+  }
+  exportAllTexts(ids: number[], category: string, word: string) {
+    this.setState({exportedTextsMessage: true});
+    this.commExportAllTexts.call({ids: ids, category: category, word: word});
   }
 
   render() {
@@ -562,12 +580,12 @@ class WordEntityBarCharts extends React.PureComponent<
         <div className="accordion" id={"accordion_sampletext" + processedData.id}>
           <div className="card">
             <div
-              className="card-header"
+              className="card-header card-sampletext"
               id={"heading_sampletext" + processedData.id}
               data-toggle="collapse"
               aria-expanded="true"
             >
-              <h4 className="mb-0" style={{padding: 8}}>
+              <h4 className="mb-0" style={{paddingBottom: 8, paddingLeft: 8}}>
                 {'Sample text for '}
                 <u>
                   {JSON.parse(this.state.info).word &&
@@ -575,6 +593,28 @@ class WordEntityBarCharts extends React.PureComponent<
                     JSON.parse(this.state.info).word}
                 </u>
               </h4>
+              <div
+                className="btn-group btn-group-sm"
+                role="group"
+                aria-label="Basic example"
+                style={{
+                  float: 'initial',
+                  marginTop: '0px',
+                  marginRight: '8px',
+                  borderRadius: '4px'}}
+              >
+                {
+                  JSON.parse(this.state.info).samples &&
+                  <button
+                    type="button"
+                    className="btn btn-gray btn-sm active"
+                    style={{ padding: '3px'}}
+                    onClick={() => this.exportAllTexts(JSON.parse(this.state.info).samples, JSON.parse(this.state.info).category, JSON.parse(this.state.info).word)}
+                  >
+                    Export all texts
+                  </button>
+                }
+              </div>
             </div>
             <div
               id={"collapse_sampletext" + processedData.id}
@@ -599,6 +639,13 @@ class WordEntityBarCharts extends React.PureComponent<
             </div>
           </div>
         </div>
+        <Snackbar open={this.state.exportedTextsMessage} onClose={() => {this.setState({exportedTextsMessage: false})}}
+                message={"Texts exported. Access with `VisualTextAnalyzer.get_exported_texts()`"}
+                autoHideDuration={6000}
+                action={<IconButton size="small" aria-label="close" color="inherit" onClick={() => this.setState({exportedTextsMessage: false})}>
+                  <CloseIcon fontSize="small" />
+                </IconButton>}
+      />
       </div>
     );
   }

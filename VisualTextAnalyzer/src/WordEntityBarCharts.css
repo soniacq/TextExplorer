@@ -22,3 +22,14 @@
     color: #FFF;
 }
 .btn-gray:hover{background-color: #545b63; color: rgb(235, 235, 235);}
+
+.word-info{
+    text-overflow: ellipsis;
+    line-height:20px;
+    height:40px;
+    width:200px;
+    padding-left: 4px;
+    border-left: 1px solid rgb(97, 97, 97);
+    overflow:hidden;
+    white-space: pre;
+}

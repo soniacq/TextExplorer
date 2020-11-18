@@ -182,7 +182,10 @@ class WordEntityBarCharts extends React.PureComponent<
           axis: {title: '', labels: false},
           sort: {encoding: 'x'},
         },
-        tooltip: {field: 'Value', type: 'quantitative'},
+        tooltip: [
+          {field: 'Value', type: 'quantitative', title: 'Frequency'},
+          {field: 'total_documents', type: 'quantitative', title: 'Total of documents'},
+        ],
         color: {
           field: 'CategoryGroup',
           scale: {range: ['#dc3545', '#0277bd']},
@@ -275,7 +278,10 @@ class WordEntityBarCharts extends React.PureComponent<
             axis: {title: '', labels: false},
             sort: {encoding: 'x'},
           },
-          tooltip: {field: 'Value', type: 'quantitative'},
+          tooltip: [
+            {field: 'Value', type: 'quantitative', title: 'Frequency'},
+            {field: 'total_documents', type: 'quantitative', title: 'Total of documents'},
+          ],
           color: {
             field: 'CategoryGroup',
             scale: {range: ['#dc3545', '#0277bd']},
@@ -586,35 +592,41 @@ class WordEntityBarCharts extends React.PureComponent<
               aria-expanded="true"
             >
               <h4 className="mb-0" style={{paddingBottom: 8, paddingLeft: 8}}>
-                {'Sample text for '}
+                {'Sample document for '}
                 <u>
                   {JSON.parse(this.state.info).word &&
                     JSON.parse(this.state.info).samples &&
                     JSON.parse(this.state.info).word}
                 </u>
               </h4>
-              <div
-                className="btn-group btn-group-sm"
-                role="group"
-                aria-label="Basic example"
-                style={{
-                  float: 'initial',
-                  marginTop: '0px',
-                  marginRight: '8px',
-                  borderRadius: '4px'}}
-              >
-                {
-                  JSON.parse(this.state.info).samples &&
-                  <button
-                    type="button"
-                    className="btn btn-gray btn-sm active"
-                    style={{ padding: '3px'}}
-                    onClick={() => this.exportAllTexts(JSON.parse(this.state.info).samples, JSON.parse(this.state.info).category, JSON.parse(this.state.info).word)}
+              {
+                JSON.parse(this.state.info).samples && (
+                  <>
+                  <div className="word-info"><b>Frequency: </b>{JSON.parse(this.state.info).frequency} <br/>
+                  <b>Total of documents: </b>{JSON.parse(this.state.info).total_documents} </div>
+                  <div
+                    className="btn-group btn-group-sm"
+                    role="group"
+                    aria-label="Basic example"
+                    style={{
+                      float: 'initial',
+                      marginTop: '7px',
+                      marginRight: '8px',
+                      borderRadius: '4px'}}
                   >
-                    Export all texts
-                  </button>
-                }
-              </div>
+                    <button
+                      type="button"
+                      title={"Export " + JSON.parse(this.state.info).total_documents + " documents."}
+                      className="btn btn-gray btn-sm active"
+                      style={{ padding: '3px'}}
+                      onClick={() => this.exportAllTexts(JSON.parse(this.state.info).samples, JSON.parse(this.state.info).category, JSON.parse(this.state.info).word)}
+                    >
+                      Export all documents
+                    </button>
+                  </div>
+                  </>
+                )
+              }
             </div>
             <div
               id={"collapse_sampletext" + processedData.id}
@@ -640,7 +652,7 @@ class WordEntityBarCharts extends React.PureComponent<
           </div>
         </div>
         <Snackbar open={this.state.exportedTextsMessage} onClose={() => {this.setState({exportedTextsMessage: false})}}
-                message={"Texts exported. Access with `VisualTextAnalyzer.get_exported_texts()`"}
+                message={"Documents exported. Access with `VisualTextAnalyzer.get_exported_texts()`"}
                 autoHideDuration={6000}
                 action={<IconButton size="small" aria-label="close" color="inherit" onClick={() => this.setState({exportedTextsMessage: false})}>
                   <CloseIcon fontSize="small" />

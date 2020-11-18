@@ -289,7 +289,8 @@ def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
             "frequency":el["freq_abs_pos"],
             "normalized_frequency_diff_pos_neg": abs(el["freq_nor_pos"]-el["freq_nor_neg"]),
             "frequency_diff_pos_neg": abs(el["freq_abs_pos"]-el["freq_abs_neg"]),
-            "samples": el["samples_pos"]
+            "samples": el["samples_pos"],
+            "total_documents": len(el["samples_pos"])
         }
         word_data_JSON.append(row_pos)
         row_neg = {
@@ -299,7 +300,8 @@ def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
             "frequency":el["freq_abs_neg"],
             "normalized_frequency_diff_pos_neg": abs(el["freq_nor_pos"]-el["freq_nor_neg"]),
             "frequency_diff_pos_neg": abs(el["freq_abs_pos"]-el["freq_abs_neg"]),
-            "samples": el["samples_neg"]
+            "samples": el["samples_neg"],
+            "total_documents": len(el["samples_neg"])
         }
         word_data_JSON.append(row_neg)
 
@@ -314,7 +316,9 @@ def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
                     "frequency":el["freq_abs_pos"],
                     "normalized_frequency_diff_pos_neg": abs(el["freq_nor_pos"]-el["freq_nor_neg"]),
                     "frequency_diff_pos_neg": abs(el["freq_abs_pos"]-el["freq_abs_neg"]),
-                    "samples": el["samples_pos"]
+                    "samples": el["samples_pos"],
+                    "total_documents": len(el["samples_pos"])
+
                 }
                 entity_data_JSON.append(row_pos)
                 row_neg = {
@@ -325,7 +329,8 @@ def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
                     "frequency":el["freq_abs_neg"],
                     "normalized_frequency_diff_pos_neg": abs(el["freq_nor_pos"]-el["freq_nor_neg"]),
                     "frequency_diff_pos_neg": abs(el["freq_abs_pos"]-el["freq_abs_neg"]),
-                    "samples": el["samples_neg"]
+                    "samples": el["samples_neg"],
+                    "total_documents": len(el["samples_neg"])
                 }
                 entity_data_JSON.append(row_neg)
             

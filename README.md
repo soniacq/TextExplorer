@@ -35,3 +35,17 @@ The returned object has the following attributes:
 - texts: List of texts.
 - category: All texts belong to that category.
 - word: All texts contain that word.
+
+## Get Processed data (Words and Entities)
+
+You might want to get the processed data, which includes word and entity frequencies, that is ready for analysis before generating the visualization. To do so, use the code:
+
+~~~~
+processed_data = VisualTextAnalyzer.get_words_entities(data, category_column='category', text_column='comments')
+VisualTextAnalyzer.plot_text_summary(words_entities=processed_data)
+~~~~
+
+The function 'get_words_entities' returns an object that contains has the following attributes: 
+- words: Word frequencies.
+- entities: Entity frequencies.
+- raw_texts: All texts separated in two categories: positive and negative.

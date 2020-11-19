@@ -18,8 +18,6 @@ from spacy import displacy
 top_words=10
 
 global_processed_data = {}
-global_positive_texts = []
-global_negative_texts = []
 
 exported_texts = {}
 
@@ -58,10 +56,10 @@ def comm_get_text(msg):
     id = msg['id']
     category = msg['category']
     if (category == 'positive'):
-        return {"text": global_positive_texts[id]}
+        return {"text": global_processed_data['raw_texts']['positive_texts'][id]}
     # then it belongs to the negative category
     else:
-        return {"text": global_negative_texts[id]}
+        return {"text": global_processed_data['raw_texts']['negative_texts'][id]}
 setup_comm_api('get_text_comm_api', comm_get_text)
 
 def comm_export_all_texts(msg):
@@ -70,10 +68,10 @@ def comm_export_all_texts(msg):
     category = msg['category']
     text_info = {}
     if (category == 'positive'):
-        text_info['texts'] = np.take(global_positive_texts, indices)
+        text_info['texts'] = np.take(global_processed_data['raw_texts']['positive_texts'], indices)
     # then it belongs to the negative category
     else:
-        text_info['texts'] = np.take(global_negative_texts, indices)
+        text_info['texts'] = np.take(global_processed_data['raw_texts']['negative_texts'], indices)
     text_info['category'] = category
     text_info['word'] = msg['word']
     exported_texts = text_info
@@ -250,11 +248,8 @@ def sort_words_and_entities(data, top_words=10, y_axis='freq_total'):
     return sorted_data
 
 
-def get_words_and_entities (data, category_column, text_column, positive_label, negative_label):
-    global global_processed_data
-    global global_positive_texts
-    global global_negative_texts
-    output_data = {}
+def get_words_entities (data=None, category_column='category', text_column='text', positive_label=1, negative_label=0):
+    processed_data = {}
     positive_class = data[data[category_column]==positive_label]
     negative_class = data[data[category_column]==negative_label]
 
@@ -263,14 +258,14 @@ def get_words_and_entities (data, category_column, text_column, positive_label, 
 
     labels = {'pos': 'positive', 'neg': 'negative'}
     print('Word Frequency:')
-    output_data["words"] =  get_words (positive_texts, negative_texts, labels)
+    processed_data["words"] =  get_words (positive_texts, negative_texts, labels)
     print('Named Entity Recognition:')
-    output_data["entities"] = get_entities (positive_texts, negative_texts, labels)
-
-    global_processed_data = output_data
-    global_positive_texts = positive_texts
-    global_negative_texts = negative_texts
-    return output_data
+    processed_data["entities"] = get_entities (positive_texts, negative_texts, labels)
+    raw_text = {}
+    raw_text['positive_texts'] = positive_texts
+    raw_text['negative_texts'] = negative_texts
+    processed_data["raw_texts"] = raw_text
+    return processed_data
 
 
 def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
@@ -341,11 +336,17 @@ def prepare_data(data, enet_alpha=0.001, enet_l1=0.1):
     }
     return search_results
 
-
-def plot_text_summary(data, category_column='category', text_column='text', positive_label=1, negative_label=0):
+def plot_text_summary(data=None, category_column='category', text_column='text', positive_label=1, negative_label=0, words_entities=None):
     from IPython.core.display import display, HTML
+    global global_processed_data
     id = id_generator()
-    processed_data = get_words_and_entities(data,category_column, text_column, positive_label, negative_label)
+    processed_data = {}
+    if words_entities is None:
+        processed_data = get_words_entities(data,category_column, text_column, positive_label, negative_label)
+        global_processed_data = processed_data
+    else:
+        processed_data = words_entities
+        global_processed_data = words_entities
     y_axis='freq_total'
     sorted_data = sort_words_and_entities(processed_data, top_words, y_axis)
     data_dict = prepare_data(sorted_data)
